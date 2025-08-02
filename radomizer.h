@@ -33,51 +33,78 @@
 extern "C" {
 #endif
 
-        /**
-         * @brief Basic pseudo-random number generator configuration and state.
-         *
-         * This randomizer is designed with audio DSP in mind:
-         * - Uses a lightweight PRNG for efficiency in real-time audio processing.
-         * - Provides sufficient randomness quality for typical audio purposes,
-         *   prioritizing speed and repeatability over cryptographic-grade randomness.
-         * - Given the same seed, the generated pattern is reproducible.
-         * - No global state; multiple instances can coexist without interference.
-         *
-         * @note Not thread-safe.
-         */
+/**
+* @brief Basic pseudo-random number generator configuration and state.
+*
+* This randomizer is designed with audio DSP in mind:
+* - Uses a lightweight PRNG for efficiency in real-time audio processing.
+* - Provides sufficient randomness quality for typical audio purposes,
+*   prioritizing speed and repeatability over cryptographic-grade randomness.
+* - Given the same seed, the generated pattern is reproducible.
+* - No global state; multiple instances can coexist without interference.
+*
+* @note Not thread-safe.
+*/
 
-        struct qx_randomizer;
+struct qx_randomizer {
+    uint32_t seed;         /**< Current seed used for pseudo-random generation. */
+    float min;             /**< Minimum value (inclusive) of the output range. */
+    float max;             /**< Maximum value (inclusive) of the output range. */
+    float resolution;      /**< Step size for quantization (e.g., 0.01f for hundredths). */
 
-        /**
-         * @brief Initialize the randomizer parameters.
-         *
-         * Sets the minimum and maximum values for the output range, and the resolution
-         * (step size) for generated random values. The seed is initialized to a default
-         * value.
-         *
-         * @param[in,out] rand Pointer to the randomizer instance to initialize.
-         * @param[in] min The minimum value (inclusive) of the random range.
-         * @param[in] max The maximum value (inclusive) of the random range.
-         * @param[in] resolution The step size for quantizing output values. Must be > 0.
-         *                       If zero or negative, defaults to 1.0f.
-         */
-        void qx_randomizer_init(qx_randomizer *rand, float min, float max, float resolution);
+    // Internal precomputed values for speed (not meant for manual editing)
+    float range;           /**< Cached: max - min. */
+    float inv_max_uint;    /**< Cached: 1.0f / UINT32_MAX, for normalization. */
+    int max_steps;         /**< Cached: number of quantization steps. */
+};
 
-        /**
-         * @brief Set or reset the RNG seed.
-         *
-         * @param[in,out] rand Pointer to the randomizer instance.
-         * @param[in] seed The seed value to initialize the random sequence.
-         */
-        void qx_randomizer_set_seed(qx_randomizer *rand, uint32_t seed);
+/**
+ * @brief Initializes a `qx_randomizer` instance.
+ *
+ * @param rand Pointer to the randomizer structure to initialize.
+ * @param seed Initial seed for the pseudo-random generator.
+ * @param min Minimum float value that can be generated (inclusive).
+ * @param max Maximum float value that can be generated (inclusive).
+ * @param resolution Step size for quantized output values.
+ *
+ * This function precomputes internal values for fast usage in loops.
+ */
+static inline void qx_randomizer_init(qx_randomizer* rand,
+                                      uint32_t seed,
+                                      float min,
+                                      float max,
+                                      float resolution)
+{
+    rand->seed = seed;
+    rand->min = min;
+    rand->max = max;
+    rand->resolution = resolution;
 
-        /**
-         * @brief Generate a random float value in [min, max] stepped by resolution.
-         *
-         * @param[in,out] rand Pointer to the randomizer instance.
-         * @return A random float within the configured range, quantized by resolution.
-         */
-        float qx_randomizer_get_float(qx_randomizer *rand);
+    rand->range = max - min;
+    rand->inv_max_uint = 1.0f / (float)UINT32_MAX;
+    rand->max_steps = (int)(rand->range / resolution + 0.5f);
+}
+
+/**
+ * @brief Generates a random quantized float within the configured range.
+ *
+ * @param rand Pointer to an initialized `qx_randomizer`.
+ * @return A float value in [min, max], snapped to the nearest multiple of `resolution`.
+ *
+ * This function is fast and designed for tight loops. It uses an internal linear congruential
+ * generator to update the seed and maps the result to quantized float values.
+ */
+static inline float qx_randomizer_get_float(qx_randomizer* rand)
+{
+    rand->seed = rand->seed * 1664525u + 1013904223u;
+
+    float normalized = rand->seed * rand->inv_max_uint;
+    int step = (int)(normalized * (rand->max_steps + 1));
+
+    if (step > rand->max_steps) step = rand->max_steps;
+
+    return rand->min + step * rand->resolution;
+}
 
 #ifdef __cplusplus
 }
