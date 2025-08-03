@@ -1,5 +1,5 @@
 /**
- * @file randomizer.h
+ * @file qx_randomizer.h
  * @brief A small C library for audio DSP: basic pseudo-random number generator.
  *
  * Project: Quamplex DSP Tools (A small C library of tools for audio DSP processing)
@@ -75,13 +75,63 @@ static inline void qx_randomizer_init(qx_randomizer* rand,
                                       float max,
                                       float resolution)
 {
+        rand->seed = 856382025u;
+        rand->min = min;
+        rand->max = max;
+        rand->resolution = resolution;
+        rand->range = max - min;
+        rand->inv_max_uint = 1.0f / (float)UINT32_MAX;
+        rand->max_steps = (int)(rand->range / resolution + 0.5f);
+}
+
+/**
+ * @brief Sets the seed for the randomizer.
+ *
+ * This allows you to manually re-seed the randomizer for reproducible results
+ * or to randomize it with a new seed.
+ *
+ * @param rand Pointer to the qx_randomizer structure.
+ * @param seed The new seed to use.
+ */
+static inline void qx_randomizer_set_seed(qx_randomizer* rand, uint32_t seed)
+{
     rand->seed = seed;
+}
+
+/**
+ * @brief Sets the minimum, maximum, and resolution range for the randomizer.
+ *
+ * Updates the output range of the randomizer and recalculates internal
+ * parameters accordingly.
+ *
+ * @param rand Pointer to the qx_randomizer structure.
+ * @param min The minimum value the randomizer should output.
+ * @param max The maximum value the randomizer should output.
+ * @param resolution The step size between random values.
+ */
+static inline void qx_randomizer_set_range(qx_randomizer* rand,
+                                           float min,
+                                           float max)
+{
     rand->min = min;
     rand->max = max;
-    rand->resolution = resolution;
-
     rand->range = max - min;
-    rand->inv_max_uint = 1.0f / (float)UINT32_MAX;
+    rand->max_steps = (int)(rand->range / rand->resolution + 0.5f);
+}
+
+/**
+ * @brief Sets the resolution for the randomizer.
+ *
+ * Updates the resolution (step size) used to generate random values
+ * and recalculates the number of steps accordingly. The range must
+ * already be defined using `min` and `max`.
+ *
+ * @param rand Pointer to the qx_randomizer structure.
+ * @param resolution The new resolution value.
+ */
+static inline void qx_randomizer_set_resolution(qx_randomizer* rand, float resolution)
+{
+    rand->resolution = resolution;
     rand->max_steps = (int)(rand->range / resolution + 0.5f);
 }
 
