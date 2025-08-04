@@ -28,6 +28,7 @@
 #define QX_RANDOMIZER_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,8 +70,7 @@ struct qx_randomizer {
  *
  * This function precomputes internal values for fast usage in loops.
  */
-static inline void qx_randomizer_init(qx_randomizer* rand,
-                                      uint32_t seed,
+static inline void qx_randomizer_init(struct qx_randomizer* rand,
                                       float min,
                                       float max,
                                       float resolution)
@@ -93,7 +93,7 @@ static inline void qx_randomizer_init(qx_randomizer* rand,
  * @param rand Pointer to the qx_randomizer structure.
  * @param seed The new seed to use.
  */
-static inline void qx_randomizer_set_seed(qx_randomizer* rand, uint32_t seed)
+static inline void qx_randomizer_set_seed(struct qx_randomizer* rand, uint32_t seed)
 {
     rand->seed = seed;
 }
@@ -109,7 +109,7 @@ static inline void qx_randomizer_set_seed(qx_randomizer* rand, uint32_t seed)
  * @param max The maximum value the randomizer should output.
  * @param resolution The step size between random values.
  */
-static inline void qx_randomizer_set_range(qx_randomizer* rand,
+static inline void qx_randomizer_set_range(struct qx_randomizer* rand,
                                            float min,
                                            float max)
 {
@@ -129,7 +129,7 @@ static inline void qx_randomizer_set_range(qx_randomizer* rand,
  * @param rand Pointer to the qx_randomizer structure.
  * @param resolution The new resolution value.
  */
-static inline void qx_randomizer_set_resolution(qx_randomizer* rand, float resolution)
+static inline void qx_randomizer_set_resolution(struct qx_randomizer* rand, float resolution)
 {
     rand->resolution = resolution;
     rand->max_steps = (int)(rand->range / resolution + 0.5f);
@@ -144,14 +144,15 @@ static inline void qx_randomizer_set_resolution(qx_randomizer* rand, float resol
  * This function is fast and designed for tight loops. It uses an internal linear congruential
  * generator to update the seed and maps the result to quantized float values.
  */
-static inline float qx_randomizer_get_float(qx_randomizer* rand)
+static inline float qx_randomizer_get_float(struct qx_randomizer* rand)
 {
     rand->seed = rand->seed * 1664525u + 1013904223u;
 
     float normalized = rand->seed * rand->inv_max_uint;
     int step = (int)(normalized * (rand->max_steps + 1));
 
-    if (step > rand->max_steps) step = rand->max_steps;
+    if (step > rand->max_steps)
+            step = rand->max_steps;
 
     return rand->min + step * rand->resolution;
 }
