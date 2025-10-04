@@ -35,6 +35,16 @@ extern "C" {
 #endif
 
 /**
+ * @brief Returns the number of elements in a static array.
+ *
+ * @param arr The array.
+ * @return Number of elements in the array.
+ *
+ * @note Only works for statically allocated arrays, not pointers.
+ */
+#define QX_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+/**
  * @brief Clamp a float value between a minimum and maximum.
  *
  * This function ensures the returned value is not lower than `min`
