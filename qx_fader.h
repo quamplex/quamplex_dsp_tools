@@ -1,10 +1,6 @@
 /**
  * @file qx_fader.h
- * @brief Math utilities for Quamplex DSP Tools.
- *
- * This header provides basic mathematical functions used in audio DSP,
- * such as clamping values to a given range, normalization, decibel conversion,
- * interpolation, and wrapping.
+ * @brief Smooth fade in/out for DSP signals.
  *
  * Project: Quamplex DSP Tools (A small C library of tools for audio DSP processing)
  * Website: https://quamplex.com

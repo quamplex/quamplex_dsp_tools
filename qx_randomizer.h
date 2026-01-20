@@ -1,6 +1,6 @@
 /**
  * @file qx_randomizer.h
- * @brief A small C library for audio DSP: basic pseudo-random number generator.
+ * @brief Basic pseudo-random number generator using lightweight PRNG.
  *
  * Project: Quamplex DSP Tools (A small C library of tools for audio DSP processing)
  * Website: https://quamplex.com
@@ -29,7 +29,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdatomic.h>
 
 #ifdef __cplusplus
 extern "C" {
